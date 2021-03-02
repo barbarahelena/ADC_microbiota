@@ -194,6 +194,16 @@ ggplot(data = df, aes(x = group, y = shannon, fill = group)) +
     stat_compare_means(comparisons = comp)
 ggsave("results/shannon.pdf", device = "pdf", width = 6, height = 5)
 
+ggplot(data = df, aes(x = AmyB, y = shannon)) +
+    geom_jitter(aes(color = group)) +
+    geom_smooth(method = "lm", color = "black") +
+    theme_Publication() +
+    scale_color_lancet() +
+    labs(title = "Shannon and AB42",
+         y = "Shannon index", 
+         x = "AB42 in CSF")
+ggsave("results/shannon_amyloid.pdf", device = "pdf", width = 6, height = 5)
+
 # Richness (ASV / Species)
 richness <- vegan::specnumber(tc@otu_table)
 df <- data.frame(sampleID = as.integer(names(richness)), richness = richness)
@@ -203,7 +213,7 @@ ggplot(data = df, aes(x = group, y = richness, fill = group)) +
     geom_boxplot(outlier.shape = NA) +
     geom_jitter(width = 0.2) +
     theme_Publication() + 
-    scale_fill_nejm(guide = FALSE) + 
+    scale_fill_lancet(guide = FALSE) + 
     labs(title = "Richness per group", y = "Richness") +
     stat_compare_means(comparisons = comp)
 ggsave("results/richness.pdf", device = "pdf", width = 6, height = 5)
@@ -218,7 +228,7 @@ ggplot(data = df, aes(x = group, y = PD, fill = group)) +
     geom_boxplot(outlier.shape = NA) +
     geom_jitter(width = 0.2) +
     theme_Publication() + 
-    scale_fill_nejm(guide = FALSE) + 
+    scale_fill_lancet(guide = FALSE) + 
     labs(title = "Faith's PD per group", y = "Faith's PD") +
     stat_compare_means(comparisons = comp)
 ggsave("results/faiths.pdf", device = "pdf", width = 6, height = 5)
