@@ -17,7 +17,7 @@ theme_composition <- function(base_size=14, base_family="sans") {
     library(ggthemes)
     (theme_foundation(base_size=base_size, base_family=base_family)
         + theme(plot.title = element_text(face = "bold",
-                                          size = rel(1.2), hjust = 0.5),
+                                          size = rel(1.0), hjust = 0.5),
                 text = element_text(),
                 panel.background = element_rect(colour = NA),
                 plot.background = element_rect(colour = NA),
@@ -51,14 +51,15 @@ cols <- c("dimgrey", 'firebrick', "navy", "dodgerblue",  "goldenrod2", "chartreu
 t <- readRDS("data/phyloseq_rarefied_sampledata.RDS")
 tab <- as.data.frame(as(t@otu_table, 'matrix'))
 dim(tab)
-(rarefaction_level <- sample_sums(tc)[1]) # rarefied to 20000
+(rarefaction_level <- sample_sums(t)[1]) # rarefied to 20000
+tax <- readRDS("data/tax_table.RDS")
 
 # convert to rel. abundance %
 tab <- (tab / rarefaction_level) * 100
 rowSums(tab) # samples should all sum up to 100%
 
 # get group metadata
-gr <- as.data.frame(as(sample_data(tc)[, c('sampleID', "group")], 'matrix'))
+gr <- as.data.frame(as(sample_data(t)[, c('sampleID', "group")], 'matrix'))
 head(gr)
 table(gr$group)
 
@@ -99,12 +100,12 @@ p1 <- dx %>%
     ggplot(aes(x = group, y = Abundance, fill = Tax)) +
     geom_bar(stat = "identity", color = 'black') +
     scale_fill_manual(values = rev(cols)) +
-    #theme_bw() +
-    labs(y="Composition (%)") +
+    theme_bw() +
+    labs(y="Composition (%)", x = "", title = "Composition (ASV level)") +
     scale_y_continuous(expand = c(0, 0)) +
     theme_composition() +
-    theme(strip.text.x = element_text(size = 16)) +
-    xlab('Group')
+    theme(strip.text.x = element_text(size = 16))
+
 p1
 ggsave("results/composition_ASV.pdf", device = "pdf", width = 7, height = 7)
 
@@ -160,11 +161,11 @@ p2 <- dx %>%
     ggplot(aes(x = group, y = Abundance, fill = Tax)) +
     geom_bar(stat = "identity", color = 'black') +
     scale_fill_manual(values = rev(cols)) +
-    ylab("Composition (%)") +
+    labs(y="Composition (%)", x = "", title = "Composition (species level)") +
     scale_y_continuous(expand = c(0, 0)) +
     theme_composition() +
-    theme(strip.text.x = element_text(size = 16)) +
-    xlab('Group')
+    theme(strip.text.x = element_text(size = 16))
+
 p2
 ggsave("results/composition_species.pdf", device = "pdf", width = 8, height = 7)
 
@@ -220,10 +221,9 @@ p3 <- dx %>%
     ggplot(aes(x = group, y = Abundance, fill = Tax)) +
     geom_bar(stat = "identity", color = 'black') +
     scale_fill_manual(values = rev(cols)) +
-    ylab("Composition (%)") +
+    labs(y="Composition (%)", x = "", title = "Composition (genus level)") +
     scale_y_continuous(expand = c(0, 0)) +
     theme_composition() +
-    theme(strip.text.x = element_text(size = 16)) +
-    xlab('Group')
+    theme(strip.text.x = element_text(size = 16))
 p3
 ggsave("results/composition_genus.pdf", device = "pdf", width = 7, height = 7)
