@@ -1,4 +1,4 @@
-## Phyloseq prep
+## Phyloseq and clinical data prep
 ## Barbara Verhaar, b.j.verhaar@amsterdamumc.nl
 
 ## Libraries
@@ -10,6 +10,8 @@ library(mixOmics)
 library(ggpubr)
 library(vegan)
 library(breakerofchains) # put mouse cursor on the %>%  and press Ctrl + Shift + B 
+library(Amelia)
+library(dplyr)
 
 theme_Publication <- function(base_size=14, base_family="sans") {
     library(grid)
@@ -72,7 +74,7 @@ sum(!is.na(tax$Species)) / nrow(tax) * 100 # only 6 % of all ASVs have species l
 sum(!is.na(tax$Genus)) / nrow(tax) * 100 # 68 % of all ASVs have genus level
 sum(!is.na(tax$Family)) / nrow(tax) * 100 # 90 % of all ASVs have family level
 sum(!is.na(tax$Phylum)) / nrow(tax) * 100 # 99.97 % of all ASVs have phylum level
-
+nrow(tax)
 # get top 300 ASV by abundance 
 ss <- taxa_sums(tc)
 ss <- ss[order(ss, decreasing = T)]
@@ -105,6 +107,7 @@ saveRDS(tax, file = "data/tax_table.RDS")
 
 ## Open metadata
 m <- rio::import("data/metadata_050321.xlsx")
+o <- rio::import("data/metadata.xlsx")
 head(m)
 names(m)
 rownames(m) <- m$Code
@@ -117,24 +120,69 @@ ma <- m %>%
                    APOE, AmyB = L_AB42_corr, AB_Elecsys = L_AB42_Elecsys, pTau = L_PTAU,
                    pT_Elecsys = L_PTAU_Elecsys, MTA_R = M_MTA_R, MTA_L = M_MTA_L, GCA = M_atrofy,
                    Faz = M_Fazekas, PCA_R = M_parietal_R, PCA_L = M_parietal_L, CMB = M_mbl_to) %>% 
-            mutate(
-                 BMI = Weight / (Height*Height*0.01*0.01),
-                 MTA = (MTA_R + MTA_L)*0.5,
-                 PCA = (PCA_R + PCA_L)*0.5,
-                 group = ifelse(Diag == "MCI", "MCI", ifelse(Diag == "Probable AD", "AD", "SCD")),
-                 BMI_cat = ifelse(BMI < 20, "<20", ifelse(BMI < 25, "20-25", ifelse(BMI < 30, "25-30", ">30"))),
-                 BMI_cat = fct_relevel(BMI_cat, "20-25", after = 4L),
-                 BMI_cat = fct_relevel(BMI_cat, "<20", after = 4L),
-                 BMI_cat = fct_rev(BMI_cat),
-                 sampleID = as.integer(sampleID)
-             ) %>%  
             filter(sampleID %in% sample_names(tc))
 
-rownames(ma) <- ma$sampleID
-rownames(ma)
-p <- merge_phyloseq(tc, sample_data(ma))
+names(o)
+oa <- o %>% dplyr::select(sampleID = Code, Old_height = V_height) %>% 
+        filter(sampleID %in% sample_names(tc))
+
+mb <- right_join(ma, oa, by = "sampleID") %>% 
+    mutate(
+        Amyloid = case_when(
+            is.na(AmyB) & !is.na(AB_Elecsys) ~ paste0(AB_Elecsys),
+            !is.na(AmyB) ~ paste0(-365+(1.87*AmyB))),
+        Amyloid = as.numeric(Amyloid),
+        pTau = case_when(
+            is.na(pTau) & !is.na(pT_Elecsys) ~ paste0(pT_Elecsys),
+            !is.na(pTau) ~  paste0(-3.9 + (0.44*pTau))),
+        pTau = as.numeric(pTau),
+        Alc = as.numeric(Alc),
+        MTA = (MTA_R + MTA_L)*0.5,
+        PCA = (PCA_R + PCA_L)*0.5,
+        group = case_when(
+            Diag == "MCI" ~ paste("MCI"),
+            Diag == "Probable AD" | Diag == "FTD" ~ paste("AD"),
+            Diag == "Subjectieve klachten" | Diag == "Neurologie anders" | 
+                Diag == "Psychiatrie" ~ paste("SCD")),
+        group2 = case_when(
+            Diag == "Probable AD" | Diag == "FTD" | Diag == "MCI" ~ paste("AD-MCI"),
+            Diag == "Subjectieve klachten" | Diag == "Neurologie anders" | 
+                Diag == "Psychiatrie" ~ paste("SCD")),
+        sampleID = as.integer(sampleID),
+        amyloid_stat = case_when(
+            Amyloid <1100 ~ paste("Amy+"),
+            Amyloid >= 1100 ~ paste("Amy-")),
+        ptau_stat = case_when(
+            pTau <27 ~ paste("Tau+"),
+            pTau >= 27 ~ paste("Tau-")),
+        Height_complete = ifelse(is.na(Height), Old_height, Height),
+        BMI = Weight / (Height_complete*Height_complete*0.01*0.01),
+        BMI_cat = case_when(
+            BMI < 20 ~ paste("<20"),
+            BMI < 25 & BMI >= 20 ~ paste("20-25"),
+            BMI < 30 & BMI >=25 ~ paste("25-30"),
+            BMI >=30 ~ paste(">30")),
+        BMI_cat = as.factor(BMI_cat)
+    ) %>% 
+    mutate_at(c("group", "group2", "amyloid_stat", "ptau_stat"), as.factor)
+
+missmap(mb)
+missmap(o)
+summary(is.na(o$M_MTA_R))
+summary(is.na(o$L_AB42_Elecsys)&is.na(o$L_AB42_corr))
+summary(mb$amyloid_stat)
+summary(mb$Amyloid)
+summary(mb$pTau)
+summary(mb$ptau_stat)
+
+
+rownames(mb) <- mb$sampleID
+rownames(mb)
+p <- merge_phyloseq(tc, sample_data(mb))
 nsamples(p)
 p
+
+saveRDS(mb, file = "data/clinicaldata.RDS")
 
 saveRDS(p, file = "data/phyloseq_rarefied_sampledata.RDS")
 
