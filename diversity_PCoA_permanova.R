@@ -65,29 +65,31 @@ tb <- subset_samples(tb, !str_detect(sampleID, "POS.CTR"))
 tc <- subset_samples(tb, !str_detect(sampleID, "7277"))
 nsamples(tc)
 sample_names(tc)
+saveRDS(tc, file = "data/phyloseq_rarefied.RDS")
 
 ## Open metadata
-m <- rio::import("data/metadata.xlsx")
+m <- rio::import("data/metadata_050321.xlsx")
 head(m)
 names(m)
 rownames(m) <- m$Code
-ma <- m %>% select(sampleID = Code, Age = I_age_1, Sex = I_sex, Diag = diagnoseOms,
+ma <- m %>% dplyr::select(sampleID = Code, Age = I_age_1, Sex = I_sex, Diag = diagnoseOms,
                    Weight = V_weight, Height = V_height, Smoking = V_smoke,
-                    Alc = V_alc, SampleDate=Datum_Feces, DiffSample = Diff_Visit_Feces,
+                   Alc = V_alc, SampleDate=Datum_Feces, DiffVisit = Diff_Feces_Visite, DiffDiag = Diff_Feces_Diagnose,
+                   DiffCSF = Diff_Feces_CSF, DiffMRI = Diff_Feces_MRI,
                    APOE, AmyB = L_AB42_corr, AB_Elecsys = L_AB42_Elecsys, pTau = L_PTAU,
                    pT_Elecsys = L_PTAU_Elecsys, MTA_R = M_MTA_R, MTA_L = M_MTA_L, GCA = M_atrofy,
                    Faz = M_Fazekas, PCA_R = M_parietal_R, PCA_L = M_parietal_L, CMB = M_mbl_to) %>% 
             mutate(
-                BMI = Weight / (Height*Height*0.01*0.01),
-                MTA = (MTA_R + MTA_L)*0.5,
-                PCA = (PCA_R + PCA_L)*0.5,
-                group = ifelse(Diag == "MCI", "MCI", ifelse(Diag == "Probable AD", "AD", "SCD")),
-                BMI_cat = ifelse(BMI < 20, "<20", ifelse(BMI < 25, "20-25", ifelse(BMI < 30, "25-30", ">30"))),
-                BMI_cat = fct_relevel(BMI_cat, "20-25", after = 4L),
-                BMI_cat = fct_relevel(BMI_cat, "<20", after = 4L),
-                BMI_cat = fct_rev(BMI_cat),
-                sampleID = as.integer(sampleID)
-            ) %>% 
+                 BMI = Weight / (Height*Height*0.01*0.01),
+                 MTA = (MTA_R + MTA_L)*0.5,
+                 PCA = (PCA_R + PCA_L)*0.5,
+                 group = ifelse(Diag == "MCI", "MCI", ifelse(Diag == "Probable AD", "AD", "SCD")),
+                 BMI_cat = ifelse(BMI < 20, "<20", ifelse(BMI < 25, "20-25", ifelse(BMI < 30, "25-30", ">30"))),
+                 BMI_cat = fct_relevel(BMI_cat, "20-25", after = 4L),
+                 BMI_cat = fct_relevel(BMI_cat, "<20", after = 4L),
+                 BMI_cat = fct_rev(BMI_cat),
+                 sampleID = as.integer(sampleID)
+             ) %>%  
             filter(sampleID %in% sample_names(tc))
 
 summary(ma$group)
@@ -113,15 +115,15 @@ x_comp <- paste0('Axis.',1)
 y_comp <- paste0('Axis.',2)
 
 # get PCoA coordinates
-df <- pcoord$vectors[, c(x_comp, y_comp)]
-df <- as.data.frame(df)
+dfpc <- pcoord$vectors[, c(x_comp, y_comp)]
+dfpc <- as.data.frame(dfpc)
 
 # add metadata / covariates
-df$sampleID <- as.integer(rownames(df))
-df <- left_join(df, ma, by = 'sampleID')
-head(df)
+dfpc$sampleID <- as.integer(rownames(dfpc))
+dfpc <- left_join(dfpc, ma, by = 'sampleID')
+head(dfpc)
 
-pl <- df %>% 
+pl <- dfpc %>% 
     ggplot(aes(Axis.1, Axis.2)) +
     scale_fill_nejm() +
     geom_point(aes(color = group), size = 2) +
@@ -129,10 +131,11 @@ pl <- df %>%
     ylab(paste0('PCo2 (', round(expl_variance[2], digits = 1),'%)')) +
     theme_Publication() +
     scale_color_lancet() +
-    guides(fill = guide_legend(override.aes = list(shape = 21, size = 2)))
+    guides(fill = guide_legend(override.aes = list(shape = 21, size = 2))) +
+    stat_ellipse(aes(color = group), type = "norm")
     #guides(shape = guide_legend(override.aes = list(size = 4)))
 pl
-ggsave("results/PCoA_BrayCurtis.pdf", device = "pdf", width = 6, height = 5)
+ggsave("results/PCoA_WeightedUnifrac.pdf", device = "pdf", width = 6, height = 5)
 
 ## for Bray-Curtis PCoA
 mat <- as(tc@otu_table, 'matrix')
@@ -143,9 +146,27 @@ pcoord <- ape::pcoa(bray, correction = "cailliez")
 expl_variance <- pcoord$values$Rel_corr_eig * 100
 x_comp <- paste0('Axis.',1)
 y_comp <- paste0('Axis.',2)
-dp <- pcoord$vectors[, c(x_comp, y_comp)]
-dp <- as.data.frame(dp)
+dbray <- pcoord$vectors[, c(x_comp, y_comp)]
+dbray <- as.data.frame(dbray)
 
+# add metadata / covariates
+dbray$sampleID <- as.integer(rownames(dbray))
+dbray <- left_join(dbray, ma, by = 'sampleID')
+head(dbray)
+
+pl <- dbray %>% 
+    ggplot(aes(Axis.1, Axis.2)) +
+    scale_fill_nejm() +
+    geom_point(aes(color = group), size = 2) +
+    xlab(paste0('PCo1 (', round(expl_variance[1], digits = 1),'%)')) +
+    ylab(paste0('PCo2 (', round(expl_variance[2], digits = 1),'%)')) +
+    theme_Publication() +
+    scale_color_lancet() +
+    guides(fill = guide_legend(override.aes = list(shape = 21, size = 2))) +
+    stat_ellipse(aes(color = group), type = "norm")
+#guides(shape = guide_legend(override.aes = list(size = 4)))
+pl
+ggsave("results/PCA_BrayCurtis.pdf", device = "pdf", width = 6, height = 5)
 
 ## CLR-transformed PCA
 pseudocount <- min(mat[mat != 0]) / 2
@@ -182,19 +203,19 @@ ggsave("results/PCA_CLR.pdf", device = "pdf", width = 6, height = 5)
 ## Alpha diversity
 # Shannon
 shannon <- vegan::diversity(tc@otu_table, index = 'shannon')
-df <- data.frame(sampleID = as.integer(names(shannon)), shannon = shannon)
-df <- left_join(df, ma, by = "sampleID")
+df_shan <- data.frame(sampleID = as.integer(names(shannon)), shannon = shannon)
+df_shan <- left_join(df_shan, ma, by = "sampleID")
 comp <- list(c("MCI", "SCD"), c("AD", "MCI"), c("AD", "SCD"))
-ggplot(data = df, aes(x = group, y = shannon, fill = group)) +
+ggplot(data = df_shan, aes(x = group, y = shannon, fill = group)) +
     geom_boxplot(outlier.shape = NA) +
     geom_jitter(width = 0.2) +
     theme_Publication() + 
-    scale_fill_nejm(guide = FALSE) + 
+    scale_fill_lancet(guide = FALSE) + 
     labs(title = "Shannon diversity per group", y = "Shannon index") +
     stat_compare_means(comparisons = comp)
 ggsave("results/shannon.pdf", device = "pdf", width = 6, height = 5)
 
-ggplot(data = df, aes(x = AmyB, y = shannon)) +
+ggplot(data = df_shan, aes(x = AmyB, y = shannon)) +
     geom_jitter(aes(color = group)) +
     geom_smooth(method = "lm", color = "black") +
     theme_Publication() +
@@ -206,10 +227,10 @@ ggsave("results/shannon_amyloid.pdf", device = "pdf", width = 6, height = 5)
 
 # Richness (ASV / Species)
 richness <- vegan::specnumber(tc@otu_table)
-df <- data.frame(sampleID = as.integer(names(richness)), richness = richness)
-df <- left_join(df, ma, by = "sampleID")
+dfveg <- data.frame(sampleID = as.integer(names(richness)), richness = richness)
+dfveg <- left_join(dfveg, ma, by = "sampleID")
 comp <- list(c("MCI", "SCD"), c("AD", "MCI"), c("AD", "SCD"))
-ggplot(data = df, aes(x = group, y = richness, fill = group)) +
+ggplot(data = dfveg, aes(x = group, y = richness, fill = group)) +
     geom_boxplot(outlier.shape = NA) +
     geom_jitter(width = 0.2) +
     theme_Publication() + 
@@ -220,11 +241,11 @@ ggsave("results/richness.pdf", device = "pdf", width = 6, height = 5)
 
 # Faith's PD
 faith <- picante::pd(tc@otu_table, tree = tc@phy_tree)
-df <- as.data.frame(faith)
-df$sampleID <- as.integer(rownames(faith))
-df <- left_join(df, ma, by = "sampleID")
+dffai <- as.data.frame(faith)
+dffai$sampleID <- as.integer(rownames(faith))
+dffai <- left_join(dffai, ma, by = "sampleID")
 comp <- list(c("MCI", "SCD"), c("AD", "MCI"), c("AD", "SCD"))
-ggplot(data = df, aes(x = group, y = PD, fill = group)) +
+ggplot(data = dffai, aes(x = group, y = PD, fill = group)) +
     geom_boxplot(outlier.shape = NA) +
     geom_jitter(width = 0.2) +
     theme_Publication() + 
@@ -242,11 +263,24 @@ mb <- ma %>%
     slice(match(sample_names(tc), sampleID))
 all(mb$sampleID == sample_names(tc)) # TRUE
 dim(mb)
-adonis(bray ~ group, data = mb) 
+r <- adonis(bray ~ group, data = mb) 
+r
 names(mb)
 adonis(bray ~ Age + Sex + group, data = mb) 
 
 
-
+## Bray curtis with PERMANOVA annotation
+pl <- dbray %>% 
+    ggplot(aes(Axis.1, Axis.2)) +
+    scale_fill_nejm() +
+    geom_point(aes(color = group), size = 2) +
+    xlab(paste0('PCo1 (', round(expl_variance[1], digits = 1),'%)')) +
+    ylab(paste0('PCo2 (', round(expl_variance[2], digits = 1),'%)')) +
+    theme_Publication() +
+    scale_color_lancet() +
+    guides(fill = guide_legend(override.aes = list(shape = 21, size = 2))) +
+    stat_ellipse(aes(color = group), type = "norm")
+#guides(shape = guide_legend(override.aes = list(size = 4)))
+pl
 
 
