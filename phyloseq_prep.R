@@ -123,22 +123,69 @@ ma <- m %>%
             filter(sampleID %in% sample_names(tc))
 
 names(o)
-oa <- o %>% dplyr::select(sampleID = Code, Old_height = V_height) %>% 
+oa <- o %>% dplyr::select(sampleID = Code, Height_old = V_height, Faz_oud = M_Fazekas,
+                          MTA_R_oud = M_MTA_R, MTA_L_oud = M_MTA_L, GCA_oud = M_atrofy, 
+                          PCA_R_oud = M_parietal_R, PCA_L_oud = M_parietal_L, CMB_oud = M_mbl_to,
+                          AB_Elecsys_oud = L_AB42_Elecsys, AmyB_oud = L_AB42_corr, 
+                          pTau_oud = L_PTAU, pT_Elecsys_oud = L_PTAU_Elecsys) %>% 
         filter(sampleID %in% sample_names(tc))
+names(oa)
 
-mb <- right_join(ma, oa, by = "sampleID") %>% 
+mb <- right_join(ma, oa, by = "sampleID")
+mb <- mb %>% 
     mutate(
-        Amyloid = case_when(
-            is.na(AmyB) & !is.na(AB_Elecsys) ~ paste0(AB_Elecsys),
-            !is.na(AmyB) ~ paste0(-365+(1.87*AmyB))),
-        Amyloid = as.numeric(Amyloid),
-        pTau = case_when(
-            is.na(pTau) & !is.na(pT_Elecsys) ~ paste0(pT_Elecsys),
-            !is.na(pTau) ~  paste0(-3.9 + (0.44*pTau))),
-        pTau = as.numeric(pTau),
+        sampleID = as.integer(sampleID),
         Alc = as.numeric(Alc),
+        Height_complete = ifelse(is.na(Height), Height_old, Height),
+        BMI = Weight / (Height_complete*Height_complete*0.01*0.01),
+        BMI_cat = case_when(
+            BMI < 20 ~ paste("<20"),
+            BMI < 25 & BMI >= 20 ~ paste("20-25"),
+            BMI < 30 & BMI >=25 ~ paste("25-30"),
+            BMI >=30 ~ paste(">30")),
+        BMI_cat = as.factor(BMI_cat),
+        
         MTA = (MTA_R + MTA_L)*0.5,
+        MTA_oud = (MTA_R_oud + MTA_L_oud)*0.5,
+        MTA_tot = case_when(
+            is.na(MTA) & !is.na(MTA_oud) ~ paste0(MTA_oud),
+            !is.na(MTA) ~ paste0(MTA)),
+        MTA2 = case_when(
+            MTA_tot >=1 ~ paste0(">=1"),
+            MTA_tot <1 ~ paste0("<1")
+        ),
         PCA = (PCA_R + PCA_L)*0.5,
+        PCA_oud = (PCA_R_oud + PCA_L_oud)*0.5,
+        PCA_tot = case_when(
+            is.na(PCA) & !is.na(PCA_oud) ~ paste0(PCA_oud),
+            !is.na(PCA) ~ paste0(PCA)),
+        PCA2 = case_when(
+            PCA_tot >=1 ~ paste0(">=1"),
+            PCA_tot <1 ~ paste0("<1")
+        ),
+        GCA_tot = case_when(
+            is.na(GCA) & !is.na(GCA_oud) ~ paste0(GCA_oud),
+            !is.na(GCA) ~ paste0(GCA)),
+        GCA2 = case_when(
+            GCA_tot >=1 ~ paste0(">=1"),
+            GCA_tot <1 ~ paste0("<1")
+        ),
+        Fazekas = case_when(
+            is.na(Faz) & !is.na(Faz_oud) ~ paste0(Faz_oud),
+            !is.na(Faz) ~ paste0(Faz)),
+        Faz2 = case_when(
+            Fazekas >=1 ~ paste0(">=1"),
+            Fazekas <1 ~ paste0("<1")
+        ),
+        #Faz2 = fct_rev(Faz2),
+        Microbleeds = case_when(
+            is.na(CMB) & !is.na(CMB_oud) ~ paste0(CMB_oud),
+            !is.na(CMB) ~ paste0(CMB)),
+        CMB2 = case_when(
+            Microbleeds >=1 ~ paste0("Present"),
+            Microbleeds <1 ~ paste0("Absent")
+        ),
+        
         group = case_when(
             Diag == "MCI" ~ paste("MCI"),
             Diag == "Probable AD" | Diag == "FTD" ~ paste("AD"),
@@ -148,33 +195,29 @@ mb <- right_join(ma, oa, by = "sampleID") %>%
             Diag == "Probable AD" | Diag == "FTD" | Diag == "MCI" ~ paste("AD-MCI"),
             Diag == "Subjectieve klachten" | Diag == "Neurologie anders" | 
                 Diag == "Psychiatrie" ~ paste("SCD")),
-        sampleID = as.integer(sampleID),
+        Amyloid = case_when(
+            is.na(AmyB) & !is.na(AB_Elecsys) ~ paste0(AB_Elecsys),
+            !is.na(AmyB) ~ paste0(-365+(1.87*AmyB))),
+        Amyloid = as.numeric(Amyloid),
+        pTau = case_when(
+            is.na(pTau) & !is.na(pT_Elecsys) ~ paste0(pT_Elecsys),
+            !is.na(pTau) ~  paste0(-3.9 + (0.44*pTau))),
+        pTau = as.numeric(pTau),
         amyloid_stat = case_when(
             Amyloid <1100 ~ paste("Amy+"),
             Amyloid >= 1100 ~ paste("Amy-")),
         ptau_stat = case_when(
-            pTau <27 ~ paste("Tau+"),
-            pTau >= 27 ~ paste("Tau-")),
-        Height_complete = ifelse(is.na(Height), Old_height, Height),
-        BMI = Weight / (Height_complete*Height_complete*0.01*0.01),
-        BMI_cat = case_when(
-            BMI < 20 ~ paste("<20"),
-            BMI < 25 & BMI >= 20 ~ paste("20-25"),
-            BMI < 30 & BMI >=25 ~ paste("25-30"),
-            BMI >=30 ~ paste(">30")),
-        BMI_cat = as.factor(BMI_cat)
+            pTau >= 27 ~ paste("High"),
+            pTau <27 ~ paste("Low"))
     ) %>% 
-    mutate_at(c("group", "group2", "amyloid_stat", "ptau_stat"), as.factor)
+    mutate_at(c("group", "group2", "amyloid_stat", "ptau_stat",
+                "MTA2", "GCA2", "Faz2", "PCA2"), as.factor) %>% 
+    mutate_at(c("amyloid_stat", "ptau_stat",
+                "MTA2", "GCA2", "PCA2"), fct_inorder)
 
-missmap(mb)
-missmap(o)
-summary(is.na(o$M_MTA_R))
-summary(is.na(o$L_AB42_Elecsys)&is.na(o$L_AB42_corr))
-summary(mb$amyloid_stat)
-summary(mb$Amyloid)
-summary(mb$pTau)
-summary(mb$ptau_stat)
-
+#missmap(mb)
+#summary(as.factor(mb$GCA2))
+#qplot(data=mb, x=MTA)
 
 rownames(mb) <- mb$sampleID
 rownames(mb)
