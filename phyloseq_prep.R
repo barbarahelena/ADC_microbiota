@@ -216,9 +216,6 @@ mb <- right_join(mb, vga, by = "I_ID") %>%
         add_row(cogasubj[1,]) %>% 
         left_join(., bristol, by = "I_ID")
 
-anti <- anti_join(mb, bristol, by = "I_ID")
-# write.csv(anti, file = "data/wrong_IIDs.csv")
-# 7334 8080 8365 8529 9050 
 mb <- mb %>% 
     mutate(
         I_ID = as.integer(I_ID),
@@ -236,8 +233,6 @@ mb <- mb %>%
             BMI < 30 & BMI >=25 ~ paste("25-30"),
             BMI >=30 ~ paste(">30")),
         BMI_cat = as.factor(BMI_cat),
-        
-        
         MTA = (MTA_R + MTA_L)*0.5,
         MTA_oud = (MTA_R_oud + MTA_L_oud)*0.5,
         MTA_tot = case_when(
@@ -247,13 +242,8 @@ mb <- mb %>%
             MTA_tot >=1 ~ paste0(">=1"),
             MTA_tot <1 ~ paste0("<1")
         ),
-        # DiffMRI_tot = case_when(
-        #     !is.na(MTA_tot) & is.na(DiffMRI) & !is.na(DiffVisit_Old) ~ paste0(DiffVisit_Old),
-        #     !is.na(DiffMRI) ~ paste0(DiffMRI),
-        # ),
         DiffMRI_totYrs = DiffMRI / years(1),
         DiffMRI_tot = DiffMRI / days(1),
-        
         PCA = (PCA_R + PCA_L)*0.5,
         PCA_oud = (PCA_R_oud + PCA_L_oud)*0.5,
         PCA_tot = case_when(
@@ -277,7 +267,6 @@ mb <- mb %>%
             Fazekas >=2 ~ paste0(">=2"),
             Fazekas <2 ~ paste0("<2")
         ),
-        #Faz2 = fct_rev(Faz2),
         Microbleeds = case_when(
             is.na(CMB) & !is.na(CMB_oud) ~ paste0(CMB_oud),
             !is.na(CMB) ~ paste0(CMB)),
@@ -298,35 +287,14 @@ mb <- mb %>%
         AmyPET = case_when(
             AmyPET == "negatief" ~ paste("Amy-"),
             AmyPET == "positief" ~ paste("Amy+")),
-        Amyloid = case_when(
-            is.na(AmyB) & !is.na(AB_Elecsys) ~ paste0(AB_Elecsys),
-            !is.na(AmyB) ~ paste0(-365+(1.87*AmyB))),
-        Amyloid = as.numeric(Amyloid),
+        
         Amyloid2 = case_when(
             is.na(AmyB) & !is.na(AB_Elecsys) ~ paste0((as.numeric(AB_Elecsys) + 365) / 1.87),
             !is.na(AmyB) ~ paste0(AmyB)),
         Amyloid2 = as.numeric(Amyloid2),
-        # tau = case_when(
-        #     is.na(tau) & !is.na(_Elecsys) ~ paste0(pT_Elecsys),
-        #     !is.na(pTau) ~  paste0(-3.9 + (0.44*pTau))),
-        # tau = as.numeric(tau),
-        pTau_tot = case_when(
-            is.na(pTau) & !is.na(pT_Elecsys) ~ paste0(pT_Elecsys),
-            !is.na(pTau) ~  paste0(-3.9 + (0.44*pTau))),
-        pTau_tot = as.numeric(pTau_tot),
-        pTau_tot2 = case_when(
-            is.na(pTau) & !is.na(pT_Elecsys) ~ paste0((as.numeric(pT_Elecsys) + 3.9) / 0.44),
-            !is.na(pTau) ~  paste0(pTau)),
-        pTau_tot2 = as.numeric(pTau_tot2),
-        amyloid_csf_stat = case_when( # this used to be 1100 in the old script..
-            Amyloid <1000 ~ paste("Amy+"),
-            Amyloid >= 1000 ~ paste("Amy-")),
         amyloid_csf_stat2 = case_when( # this status uses the assay-dependent cut-off
             (is.na(AmyB) & !is.na(AB_Elecsys)) & as.numeric(AB_Elecsys) < 1000 ~ paste0("Amy+"),
             (is.na(AmyB) & !is.na(AB_Elecsys)) & as.numeric(AB_Elecsys) >= 1000 ~ paste0("Amy-"),
-            !is.na(AmyB) & AmyB < 813 ~ paste0("Amy+"),
-            !is.na(AmyB) & AmyB >= 813 ~ paste0("Amy-")),
-        amyloid_csf_inno = case_when( # most of the amyloid results are from innotest
             !is.na(AmyB) & AmyB < 813 ~ paste0("Amy+"),
             !is.na(AmyB) & AmyB >= 813 ~ paste0("Amy-")),
         amyloid_stat = case_when(
@@ -334,20 +302,14 @@ mb <- mb %>%
             AmyPET == "Amy-" & amyloid_csf_stat2 == "Amy-" ~ paste("Amy-"),
             is.na(AmyPET) & amyloid_csf_stat2 == "Amy-" ~ paste("Amy-"),
             is.na(amyloid_csf_stat2) & AmyPET == "Amy-" ~ paste("Amy-")),
-        ptau_stat = case_when( # this status is the one that was used for the machine learning
-            pTau_tot >= 27 ~ paste("High"),
-            pTau_tot <27 ~ paste("Low")),
-        ptau_stat2 = case_when( # this status uses the assay-dependent cut-off
-            (is.na(pTau) & !is.na(pT_Elecsys)) & as.numeric(pT_Elecsys) > 17 ~ paste0("High"),
-            (is.na(pTau) & !is.na(pT_Elecsys)) & as.numeric(pT_Elecsys) <= 17 ~ paste0("Low"),
-            !is.na(pTau) & pTau > 52 ~ paste0("High"),
-            !is.na(pTau) & pTau <= 52 ~ paste0("Low")),
+        
+        pTau_tot2 = case_when(
+            is.na(pTau) & !is.na(pT_Elecsys) ~ paste0((as.numeric(pT_Elecsys) + 3.9) / 0.44),
+            !is.na(pTau) ~  paste0(pTau)),
+        pTau_tot2 = as.numeric(pTau_tot2),
         ptau_stat3 = case_when( # this status uses the assay-dependent cut-off
             (is.na(pTau) & !is.na(pT_Elecsys)) & as.numeric(pT_Elecsys) > 19 ~ paste0("High"),
             (is.na(pTau) & !is.na(pT_Elecsys)) & as.numeric(pT_Elecsys) <= 19 ~ paste0("Low"),
-            !is.na(pTau) & pTau > 52 ~ paste0("High"),
-            !is.na(pTau) & pTau <= 52 ~ paste0("Low")),
-        ptau_stat_inno = case_when( # most of the ptau results are from innotest
             !is.na(pTau) & pTau > 52 ~ paste0("High"),
             !is.na(pTau) & pTau <= 52 ~ paste0("Low")),
         DiffCSF_tot = case_when(
@@ -365,43 +327,11 @@ mb <- mb %>%
             Smoking == "rookt" ~ paste0("Yes")
         )
     ) %>% 
-    mutate_at(c("group", "group2", "amyloid_stat", "amyloid_csf_stat2", "amyloid_csf_inno",
-                "ptau_stat", "ptau_stat2", "amyloid_csf_stat", "AmyPET",
+    mutate_at(c("group", "group2", "amyloid_stat", "amyloid_csf_stat2", "ptau_stat3", "AmyPET",
                 "MTA2", "GCA2", "Faz2", "PCA2"), as.factor) %>% 
     mutate_at(c("amyloid_stat","MTA2", "GCA2", "PCA2"), fct_inorder) %>% 
-    mutate(ptau_stat2 = fct_relevel(ptau_stat2, "High", after = 1L),
+    mutate(ptau_stat3 = fct_relevel(ptau_stat3, "High", after = 1L),
            Sex = fct_relevel(Sex, "f", after = 1L))
-# summary((mb$amyloid_csf_stat))
-# summary(!is.na(mb$AmyPET)|!is.na(mb$amyloid_csf_stat))
-#missmap(mb)
-#summary(as.factor(mb$GCA2))
-#qplot(data=mb, x=MTA)
-
-# check <- mb %>% filter(!is.na(MTA_oud) & !is.na(MTA))
-# all(check$Faz == check$Faz_oud) # overlappen dus niet helemaal oude/nieuwe MRI
-# table(check$PCA_L, check$PCA_L_oud) # steeds 1 a 2 subjects verschillend
-# 
-# table(!is.na(mb$MTA_oud))
-# 
-# table(mb$ptau_stat, mb$ptau_stat2)
-# table(mb$ptau_stat)
-# table(mb$ptau_stat2)
-# table(mb$ptau_stat_inno)
-# 
-# table(mb$amyloid_csf_stat, mb$amyloid_csf_stat2)
-# table(mb$amyloid_csf_stat)
-# table(mb$amyloid_csf_stat2)
-# table(mb$amyloid_csf_inno)
-# table(mb$amyloid_stat)
-# 
-# summary(mb$pTau_tot)
-# summary(mb$pTau_tot2)
-# summary(mb$Smoking)
-# 
-# summary(mb$amyloid_status)
-# summary(mb$Amyloid2)
-# 
-# summary(mb$DM)
 
 rownames(mb) <- mb$sampleID
 # rownames(mb)
@@ -411,38 +341,4 @@ p <- merge_phyloseq(tc, sample_data(mb))
 # p
 
 saveRDS(mb, file = "data/clinicaldata.RDS")
-
 saveRDS(p, file = "data/phyloseq_rarefied_sampledata.RDS")
-
-
-### Dataset voor Tom
-mb_2 <- mb %>% mutate(
-    AD_symp1 = case_when(
-        amyloid_csf_stat2 == "Amy+" & group == "MCI" ~ paste0("Symptomatic AD"),
-        amyloid_csf_stat2 == "Amy+" & group == "AD" ~ paste0("Symptomatic AD"),
-        group == "SCD" ~ paste0("Control"),
-    ),
-    AD_symp1 = as.factor(AD_symp1),
-    AD_symp2 = case_when(
-        amyloid_csf_stat2 == "Amy+" & group == "MCI" ~ paste0("Symptomatic AD"),
-        amyloid_csf_stat2 == "Amy+" & group == "AD" ~ paste0("Symptomatic AD"),
-        group == "SCD" & amyloid_csf_stat2 == "Amy-"~ paste0("Control")
-    ),
-    AD_symp2 = as.factor(AD_symp2),
-    AD_symp3 = case_when(
-        amyloid_csf_stat2 == "Amy+" & group == "MCI" ~ paste0("Symptomatic AD"),
-        group == "AD" ~ paste0("Symptomatic AD"),
-        group == "SCD" ~ paste0("Control")
-    ),
-    AD_symp3 = as.factor(AD_symp3)
-) %>% 
-    dplyr::select(., I_ID, sampleID, Age, Sex, MMSE,
-                  diag_group = group, 
-                  AD_symp1, AD_symp2, AD_symp3, 
-                  csf_amyloid = `amyloid_csf_stat2`,
-                  DiffCSF_totYrs)
-str(mb_2)
-
-Amelia::missmap(mb_2)
-
-write_csv(mb_2, file = "data/ADC_dataset.csv")
