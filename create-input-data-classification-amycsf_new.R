@@ -9,15 +9,12 @@ d <- readRDS('data/clinicaldata.RDS')
 head(d)
 names(d)
 d$ID<-paste0('S', d$sampleID)
-
-any(is.na(d$MTA2)) # TRUE
-d <- d %>% filter(!is.na(MTA2))
-any(is.na(d$MTA2)) # FALSE
-d$MTA2 <- case_when(
-                d$MTA2==">=1" ~ 1,
-                d$MTA2=="<1" ~ 0)
-summary(as.factor(d$MTA2))
-d <- d %>% dplyr::select(ID, MTA2)
+any(is.na(d$amyloid_csf_stat2)) # TRUE
+d <- d %>% filter(!is.na(amyloid_csf_stat2))
+any(is.na(d$amyloid_csf_stat2)) # FALSE
+d$amyloid_stat <- ifelse(d$amyloid_csf_stat2=="Amy+", 1, 0)
+summary(as.factor(d$amyloid_stat))
+d <- d %>% dplyr::select(ID, amyloid_stat)
 
 ## Open RDS file with OTU table
 dd <- readRDS('data/phyloseq_rarefied.RDS')
@@ -71,11 +68,11 @@ write_y <- function(x, name_y, data_path){
 }
 
 # make input data
-path <- 'mta_new'
+path <- 'amycsf_nieuweindeling'
 dir.create(path)
-dir.create("mta_new/input_data")
+dir.create("amycsf_nieuweindeling/input_data")
 write_data(dd2, file.path(path, 'input_data'))
-y <- as.data.frame(d$MTA2)
+y <- as.data.frame(d$amyloid_stat)
 y
 write_y(y, name_y = 'y_binary.txt', file.path(path, 'input_data'))
 

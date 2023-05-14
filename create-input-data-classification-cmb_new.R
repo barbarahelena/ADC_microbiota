@@ -13,6 +13,7 @@ d$ID<-paste0('S', d$sampleID)
 any(is.na(d$Faz2)) # TRUE
 d <- d %>% filter(!is.na(CMB2))
 any(is.na(d$Faz2)) # FALSE
+dim(d)
 d$CMB2 <- ifelse(d$CMB2=="Present", 1, 0)
 summary(as.factor(d$CMB2))
 d <- d %>% dplyr::select(ID, CMB2)
@@ -26,6 +27,7 @@ dd2 <- otu[,tk]
 dim(dd2)
 head(dd2)
 dd2 <- as.data.frame(dd2)
+# write.csv(dd2, "results/otu_names.csv")
 dim(dd2)
 rownames(dd2) <- paste0('S', rownames(dd2))
 dd2 <- dd2 %>% filter(rownames(.) %in% d$ID)
@@ -69,9 +71,9 @@ write_y <- function(x, name_y, data_path){
 }
 
 # make input data
-path <- 'cmblow_high'
+path <- 'cmb_new'
 dir.create(path)
-dir.create("cmblow_high/input_data")
+dir.create("cmb_new/input_data")
 write_data(dd2, file.path(path, 'input_data'))
 y <- as.data.frame(d$CMB2)
 y

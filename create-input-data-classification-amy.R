@@ -68,9 +68,9 @@ write_y <- function(x, name_y, data_path){
 }
 
 # make input data
-path <- 'amypos_amyneg_2'
+path <- 'amytotaal'
 dir.create(path)
-dir.create("amypos_amyneg_2/input_data")
+dir.create("amytotaal/input_data")
 write_data(dd2, file.path(path, 'input_data'))
 y <- as.data.frame(d$amyloid_stat)
 y

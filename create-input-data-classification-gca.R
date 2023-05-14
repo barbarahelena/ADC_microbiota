@@ -13,7 +13,7 @@ d$ID<-paste0('S', d$sampleID)
 any(is.na(d$GCA2)) # TRUE
 d <- d %>% filter(!is.na(GCA2))
 any(is.na(d$GCA2)) # FALSE
-d$GCA2 <- ifelse(d$GCA2=="High", 1, 0)
+d$GCA2 <- ifelse(d$GCA2==">=1", 1, 0)
 summary(as.factor(d$GCA2))
 d <- d %>% dplyr::select(ID, GCA2)
 
@@ -69,9 +69,9 @@ write_y <- function(x, name_y, data_path){
 }
 
 # make input data
-path <- 'gcalow_high'
+path <- 'gca_new'
 dir.create(path)
-dir.create("gcalow_high/input_data")
+dir.create("gca_new/input_data")
 write_data(dd2, file.path(path, 'input_data'))
 y <- as.data.frame(d$GCA2)
 y

@@ -13,7 +13,7 @@ d$ID<-paste0('S', d$sampleID)
 any(is.na(d$Faz2)) # TRUE
 d <- d %>% filter(!is.na(Faz2))
 any(is.na(d$Faz2)) # FALSE
-d$Faz2 <- ifelse(d$Faz2=="High", 1, 0)
+d$Faz2 <- ifelse(d$Faz2==">=2", 1, 0)
 summary(as.factor(d$Faz2))
 d <- d %>% dplyr::select(ID, Faz2)
 
@@ -69,9 +69,9 @@ write_y <- function(x, name_y, data_path){
 }
 
 # make input data
-path <- 'faz'
+path <- 'faz_new'
 dir.create(path)
-dir.create("faz/input_data")
+dir.create("faz_new/input_data")
 write_data(dd2, file.path(path, 'input_data'))
 y <- as.data.frame(d$Faz2)
 y
