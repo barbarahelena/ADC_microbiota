@@ -1,0 +1,9 @@
+# For unix operating systems:
+
+"conda create --name xgb --file xgboost_env.txt"
+
+# For WINDOWS / MAC OS:
+# (you can change the name / path of the environment from the yaml file, if you want)
+
+"conda env create --file xgboost_env.yml"
+
