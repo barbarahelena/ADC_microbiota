@@ -99,13 +99,14 @@ pl2 <- dbray %>%
     ggplot(aes(Axis.1, Axis.2)) +
     scale_fill_nejm() +
     geom_point(aes(color = group), size = 2) +
+    ggtitle("PCoA Bray-Curtis distance") +
     xlab(paste0('PCo1 (', round(expl_variance[1], digits = 1),'%)')) +
     ylab(paste0('PCo2 (', round(expl_variance[2], digits = 1),'%)')) +
     theme_Publication() +
     scale_color_lancet() +
     guides(fill = guide_legend(override.aes = list(shape = 21, size = 2))) +
     stat_ellipse(aes(color = group), type = "norm")
-#guides(shape = guide_legend(override.aes = list(size = 4)))
+    #guides(shape = guide_legend(override.aes = list(size = 4)))
 pl2
 ggsave("results/PCA_BrayCurtis.pdf", device = "pdf", width = 6, height = 5)
 
@@ -165,7 +166,7 @@ pl <- dbray %>%
     scale_color_lancet() +
     guides(fill = guide_legend(override.aes = list(shape = 21, size = 2))) +
     stat_ellipse(aes(color = group), type = "norm")
-pl + annotate("text", x = 0.2, y = 0.4, label = paste0("PERMANOVA p=", res$aov.tab[3,6]))
+pl <- pl + annotate("text", x = 0.2, y = 0.4, label = paste0("PERMANOVA p = ", res$aov.tab[3,6]))
 
 ggsave("results/PCA_BrayCurtis_permanova.pdf", device = "pdf", width = 6, height = 5)
 
@@ -176,13 +177,13 @@ df_shan <- data.frame(sampleID = as.integer(names(shannon)), shannon = shannon)
 df_shan <- left_join(df_shan, ma, by = "sampleID")
 
 comp <- list(c("MCI", "SCD"), c("AD", "MCI"), c("AD", "SCD"))
-ggplot(data = df_shan, aes(x = group, y = shannon, fill = group)) +
+pl4 <- ggplot(data = df_shan, aes(x = group, y = shannon, fill = group)) +
     geom_violin() +
     geom_boxplot(width = 0.1, fill = "white", outlier.shape = NA) +
     theme_Publication() + 
-    scale_fill_nejm(guide = FALSE) + 
+    scale_fill_lancet(guide = FALSE) + 
     labs(title = "Alpha diversity (Shannon)", y = "Shannon index", x="") +
-    stat_compare_means(comparisons = comp)
+    stat_compare_means(method = "anova")
 ggsave("results/shannon.pdf", device = "pdf", width = 6, height = 5)
 
 comp2 <- list(c("AD-MCI", "SCD"))
@@ -204,7 +205,18 @@ ggplot(data = df_shan %>% filter(!is.na(amyloid_stat)),
     scale_fill_nejm(guide = FALSE) + 
     labs(title = "Alpha diversity (Shannon)", y = "Shannon index", x="") +
     stat_compare_means(aes(x = amyloid_stat),comparisons = comp3)
-ggsave("results/shannon_amyloidstat.pdf", device = "pdf", width = 6, height = 5)
+ggsave("results/0405_shannon_amyloidstat.pdf", device = "pdf", width = 6, height = 5)
+
+comp3 <- list(c("Amy-", "Amy+"))
+ggplot(data = df_shan %>% filter(!is.na(AmyPET)), 
+       aes(x = AmyPET, y = shannon, fill = AmyPET)) +
+    geom_violin() +
+    geom_boxplot(width = 0.1, fill = "white", outlier.shape = NA) +
+    theme_Publication() + 
+    scale_fill_nejm(guide = FALSE) + 
+    labs(title = "Alpha diversity (Shannon)", y = "Shannon index", x="") +
+    stat_compare_means(aes(x = amyloid_stat),comparisons = comp3)
+ggsave("results/0405_shannon_amyloidpet.pdf", device = "pdf", width = 6, height = 5)
 
 # ggplot(data = df_shan, aes(x = AmyB, y = shannon)) +
 #     geom_jitter(aes(color = group)) +
@@ -246,7 +258,7 @@ ggplot(data = dfveg %>% filter(!is.na(amyloid_stat)),
     geom_violin()+
     geom_boxplot(outlier.shape = NA, fill = "white", width = 0.1) +
     theme_Publication() + 
-    scale_fill_nejm(guide = FALSE) + 
+    scale_fill_nejm(guide = "none") + 
     labs(title = "Species richness", y = "Number of species", x = "") +
     stat_compare_means(comparisons = comp3)
 ggsave("results/richness_amyloid.pdf", device = "pdf", width = 6, height = 5)
@@ -261,7 +273,7 @@ ggplot(data = dffai, aes(x = group, y = PD, fill = group)) +
     geom_violin()+
     geom_boxplot(outlier.shape = NA, fill = "white", width = 0.1) +
     theme_Publication() + 
-    scale_fill_nejm(guide = FALSE) + 
+    scale_fill_nejm(guide = "none") + 
     labs(title = "Alpha diversity (Faith's PD)", y = "Faith's phylogenetic diversity") +
     stat_compare_means(comparisons = comp)
 ggsave("results/faiths.pdf", device = "pdf", width = 6, height = 5)
@@ -271,7 +283,7 @@ ggplot(data = dffai, aes(x = group2, y = PD, fill = group2)) +
     geom_violin()+
     geom_boxplot(outlier.shape = NA, fill = "white", width = 0.1) +
     theme_Publication() + 
-    scale_fill_nejm(guide = FALSE) + 
+    scale_fill_nejm(guide = "none") + 
     labs(title = "Alpha diversity (Faith's PD)", y = "Faith's phylogenetic diversity") +
     stat_compare_means(comparisons = comp2)
 ggsave("results/faiths_2groups.pdf", device = "pdf", width = 6, height = 5)
@@ -282,8 +294,12 @@ ggplot(data = dffai %>% filter(!is.na(amyloid_stat)),
     geom_violin()+
     geom_boxplot(outlier.shape = NA, fill = "white", width = 0.1) +
     theme_Publication() + 
-    scale_fill_nejm(guide = FALSE) + 
+    scale_fill_nejm(guide = "none") + 
     labs(title = "Alpha diversity (Faith's PD)", y = "Faith's phylogenetic diversity", x="") +
     stat_compare_means(comparisons = comp3)
 ggsave("results/faiths_amyloid.pdf", device = "pdf", width = 6, height = 5)
 
+
+ggarrange(p3, pl, pl4, labels = c("A", "B", "C"))
+ggsave("results/descriptives.pdf", device = "pdf", width = 12, height = 10)
+ggsave("results/descriptives.svg", device = "svg", width = 12, height = 10)
