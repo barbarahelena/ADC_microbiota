@@ -186,7 +186,8 @@ plot_features_tests_class <- function(input_path, output_path, top_n=10, labels=
     tax <- readRDS("data/tax_table.RDS")
     names(input_data) <- feature_names$V1
     if(top_n > ncol(input_data)){
-        cat('\n\nRequested no. of features is higher than total number of features in model.\nShowing all features in model.\n\n')
+        cat('\n\nRequested no. of features is higher than total number of features in model.\n
+                 Showing all features in model.\n\n')
         top_n <- ncol(input_data)
     }
     features_tk <- r$FeatName[1:top_n]
@@ -202,7 +203,6 @@ plot_features_tests_class <- function(input_path, output_path, top_n=10, labels=
         df <- dd %>% dplyr::select(all_of(asv), y)
         names(df)[1] <- 'Feature'
         df <- df %>% mutate(Feature = Feature / 200)
-        df$y <- factor(df$y)
         tax_asv <- tax$Tax[match(asv, tax$ASV)]
         pl <- ggplot(df, aes(x=y, y=Feature, fill=y))+
             geom_violin(trim = TRUE) +
@@ -271,8 +271,6 @@ plot_features_tests_top <- function(input_path, output_path, top_n=20, nrow=4, l
     colnames(dd) <- make.unique(tax$Tax[match(colnames(dd), tax$ASV)])
     y <- rio::import(file.path(input_path, 'y_binary.txt'))
     dd$y <- y$V1
-    dd$y <- factor(ifelse(dd$y==1, labels[1], labels[2]))
-    comps <- list(c(labels[1],labels[2]))
     df <- dd %>% pivot_longer(-y, names_to = 'features', values_to = 'values')
     df <- df %>% mutate(y = factor(y),
                         features = as.factor(features),
@@ -290,7 +288,7 @@ plot_features_tests_top <- function(input_path, output_path, top_n=20, nrow=4, l
         ggpubr::stat_compare_means(comparisons = comps, paired = F, size = rel(3.0))+
         facet_wrap(~ features, nrow=nrow, scales = 'free')
     pl
-    ggsave(pl, path = plot_path, filename = paste0('top_',top_n,'_features.pdf'), device = 'pdf', width=15, height = 10)
-    ggsave(pl, path = plot_path, filename = paste0('top_',top_n,'_features.svg'), device = 'svg', width=15, height = 10)
+    ggsave(pl, path = plot_path, filename = paste0('top_',top_n,'_features.pdf'), device = 'pdf', width=15, height = 14)
+    ggsave(pl, path = plot_path, filename = paste0('top_',top_n,'_features.svg'), device = 'svg', width=15, height = 14)
 }
 
