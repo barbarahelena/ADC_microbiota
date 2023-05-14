@@ -104,7 +104,7 @@ for(i in 1:nrow(phy2@tax_table)){
 
 ## Genus level
 gen2 = filter_taxa(gen, function(x) sum(x > 3) > (0.3*length(x)), TRUE)
-dir.create("results/genus_boxplots")
+dir.create("results/kruskal_genus_boxplots")
 
 for(i in 1:nrow(gen2@tax_table)){
     gen_name <- gen2@tax_table[,"Genus"][[i]]
@@ -114,7 +114,7 @@ for(i in 1:nrow(gen2@tax_table)){
     df$sampleID <- as.integer(rownames(df))
     dfa <- left_join(df, ma, by="sampleID")
     dfa$family <- dfa[,1]
-    comp <- list(c("MCI", "SCD"), c("AD", "MCI"), c("AD", "SCD"))
+    #comp <- list(c("MCI", "SCD"), c("AD", "MCI"), c("AD", "SCD"))
     pl <- ggplot(data = dfa, aes(x=group, y=family)) +
         geom_violin(aes(fill=group)) +
         geom_boxplot(fill = "white", width = 0.1, outlier.shape = NA) +
@@ -122,8 +122,8 @@ for(i in 1:nrow(gen2@tax_table)){
         theme_Publication() +
         labs(title = gen_name, 
              x = "", y = "Relative abundance (%)") +
-        stat_compare_means(comparisons =  comp, method = "wilcox.test")
-    ggsave(pl, filename = str_c("results/genus_boxplots/gen_", str_to_lower(gen_name), ".pdf"), 
+        stat_compare_means(method = "kruskal.test")
+    ggsave(pl, filename = str_c("results/kruskal_genus_boxplots/gen_", str_to_lower(gen_name), ".pdf"), 
            device = "pdf", width = 5, height = 5)
 }
 
