@@ -43,7 +43,6 @@ theme_Publication <- function(base_size=14, base_family="sans") {
 ## Open metadata
 ma <- readRDS("data/clinicaldata.RDS")
 names(ma)
-# missmap(ma)
 
 ## Table 1
 table1 <- ma %>% 
@@ -61,61 +60,7 @@ df$number <- 170-round((as.numeric(df$Missing)/100)*170)
 write.csv(df, file = "results/210816_table1.csv")
 
 
-a <- ggplot(data = ma) +
-    geom_jitter(aes(x=Amyloid2, y = pTau_tot2, color = group)) +
-    labs(x = "amyloid CSF levels",
-         y = "p-tau CSF levels") +
-    scale_color_lancet() +
-    #facet_wrap(~group) +
-    theme_Publication()
-b <- ggplot(data = ma) +
-    geom_histogram(aes(x=Amyloid2, fill = group), binwidth = 60) +
-    labs(x = "amyloid CSF levels") +
-    scale_y_continuous(n.breaks = 6) +
-    scale_fill_lancet() +
-    guides(fill = FALSE) +
-    facet_wrap(~group) +
-    theme_Publication()
-c <- ggplot(data = ma) +
-    geom_histogram(aes(x= pTau_tot2, fill = group), binwidth = 10) +
-    labs(x = "p-tau CSF levels") +
-    scale_y_continuous(n.breaks = 6) +
-    scale_fill_lancet() +
-    guides(fill = FALSE) +
-    facet_wrap(~group) +
-    theme_Publication()
-
-ggarrange(a, b, c, labels = c("A", "B", "C"))
-ggsave("results/distribution_CSF.pdf", device = "pdf",
-       width = 12, height = 8)
-
-d <- ggplot(data = ma, aes(x=group, y=Amyloid2, fill = group), color = "black") +
-    geom_violin() +
-    #geom_beeswarm(method = "swarm2", corral.width = 0.4)+
-    geom_boxplot(fill = "white", width = 0.15, outlier.shape = NA) +
-    labs(x = "",
-         y = "amyloid CSF levels (ng/l)") +
-    scale_fill_lancet(guide = "none") +
-    coord_cartesian(ylim = c(0, 1600))+
-    ggtitle("Amyloid CSF")+
-    theme_Publication()
-
-e <- ggplot(data = ma, aes(x=group, y=pTau_tot2, fill = group), color = "black") +
-    geom_violin() +
-    #geom_beeswarm(method = "swarm2", corral.width = 0.4)+
-    geom_boxplot(fill = "white", width = 0.15, outlier.shape = NA) +
-    labs(x = "",
-         y = "p-tau CSF levels (pg/ml)") +
-    scale_fill_lancet(guide = "none") +
-    coord_cartesian(ylim = c(0,200))+
-    ggtitle("p-tau CSF")+
-    theme_Publication()
-
-ggarrange(d, e, labels = c("A", "B"))
-ggsave("results/amyloid_tau_distribution.pdf", device = "pdf",
-       width = 8, height = 5)
-
-
+## Tests
 scdad <- ma %>% filter(group != "MCI")
 admci <- ma %>% filter(group != "SCD")
 mciscd <- ma %>% filter(group != "AD")
@@ -165,3 +110,31 @@ kruskal.test(ma$pTau_tot2, ma$group)
 wilcox.test(scdad$pTau_tot2~scdad$group)
 wilcox.test(admci$pTau_tot2~admci$group)
 wilcox.test(mciscd$pTau_tot2~mciscd$group)
+
+
+## Descriptive plots amyloid levels (supplements)
+plot_a <- ggplot(data = ma, aes(x=group, y=Amyloid2, fill = group), color = "black") +
+    geom_violin() +
+    #geom_beeswarm(method = "swarm2", corral.width = 0.4)+
+    geom_boxplot(fill = "white", width = 0.15, outlier.shape = NA) +
+    labs(x = "",
+         y = "amyloid CSF levels (ng/l)") +
+    scale_fill_lancet(guide = "none") +
+    coord_cartesian(ylim = c(0, 1600))+
+    ggtitle("Amyloid CSF")+
+    theme_Publication()
+
+plot_b <- ggplot(data = ma, aes(x=group, y=pTau_tot2, fill = group), color = "black") +
+    geom_violin() +
+    #geom_beeswarm(method = "swarm2", corral.width = 0.4)+
+    geom_boxplot(fill = "white", width = 0.15, outlier.shape = NA) +
+    labs(x = "",
+         y = "p-tau CSF levels (pg/ml)") +
+    scale_fill_lancet(guide = "none") +
+    coord_cartesian(ylim = c(0,200))+
+    ggtitle("p-tau CSF")+
+    theme_Publication()
+
+ggarrange(plot_a, plot_b, labels = c("A", "B"))
+ggsave("results/amyloid_tau_distribution.pdf", device = "pdf",
+       width = 8, height = 5)
