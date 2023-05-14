@@ -43,8 +43,8 @@ theme_composition <- function(base_size=14, base_family="sans") {
     
 }
 
-cols <- c("dimgrey", 'firebrick', "navy", "dodgerblue",  "goldenrod2", "chartreuse4", "darkorange2", "darkslateblue", "darkred", "lightskyblue",
-          "seagreen", "gold1", "lightgreen", "gray", "linen", "maroon4", "pink", "orchid1", "snow3", "sienna")
+cols <- c("darkgreen", 'firebrick', "navy", "dodgerblue",  "goldenrod2", "chartreuse4", "darkorange2", "rosybrown1", "darkred", "lightskyblue",
+          "seagreen", "gold1", "olivedrab", "royalblue", "linen", "maroon4", "mediumturquoise", "plum2", "darkslateblue", "sienna", "grey70", "grey90")
 
 
 ## Data
@@ -173,7 +173,7 @@ ggsave("results/composition_species.pdf", device = "pdf", width = 8, height = 7)
 ## Genus-level #############
 
 # How many features to plot
-N <- 20
+# N <- 20
 # convert to long format
 d <- tab %>% 
     rownames_to_column(var = 'Sample') %>% 
@@ -187,17 +187,17 @@ d$Genus[str_detect(d$Genus, 'spp.')] <- 'ambiguous'
 d$group <- factor(gr$group[match(d$Sample, gr$sampleID)])
 head(d)
 
-top_taxa <- d %>% 
-    group_by(Genus) %>% 
-    summarize(Abund = sum(Abundance)) %>% 
-    arrange(-Abund) %>% 
-    dplyr::select(Genus) %>% 
-    filter(Genus != 'ambiguous') %>% 
-    head(N) %>% 
+top_taxa <- d %>%
+    group_by(Genus) %>%
+    summarise(Abund = sum(Abundance)) %>%
+    arrange(-Abund) %>%
+    dplyr::select(Genus) %>%
+    filter(Genus != 'ambiguous') %>%
+    head(N) %>%
     unlist()
 top_taxa
 
-d %>% group_by(Sample) %>% summarize(x = sum(Abundance))
+d %>% group_by(Sample) %>% summarise(x = sum(Abundance))
 
 # summarize abundance per group for this tax level
 dx <- d %>% 
@@ -211,19 +211,41 @@ dx <- dx %>%
 dx
 
 # check
-dx %>% group_by(group)  %>% summarize(x = sum(Abundance))
+dx %>% group_by(group) %>% summarise(x = sum(Abundance))
 
-# keep only top N
-top_taxa
+dx$Genus2 <- case_when(
+    dx$Genus %in% top_taxa ~ paste(dx$Genus),
+    is.na(dx$Genus) ~ paste("Unknown"),
+    !(dx$Genus %in% top_taxa) ~ paste("Other genera")
+)
+
+dx <- dx %>% mutate(
+    Genus2 = as.factor(Genus2),
+    Genus2 = fct_relevel(Genus2, "Other genera", after = 0L),
+    Genus2 = fct_relevel(Genus2, "Unknown", after = 0L),
+    Genus2 = fct_recode(Genus2, `Oscillospiraceae UCG-002` = "UCG-002",
+                        `Oscillospiraceae NK4A214 group` = "NK4A214 group")
+)
+
+lev <- levels(dx$Genus2)
+lev
+lev[17] <- "**Phascolarctobacterium**"
+lev[21] <- "**Subdoligranulum**"
+
+dx <- dx %>% group_by(group, Genus2) %>% summarise(Abundance2 = sum(Abundance))
+
+library(ggtext)
 p3 <- dx %>% 
-    filter(Genus %in% top_taxa) %>% 
-    mutate(Tax = factor(Genus, levels = rev(make.unique(top_taxa)))) %>% 
-    ggplot(aes(x = group, y = Abundance, fill = Tax)) +
+    #filter(Genus %in% top_taxa) %>% 
+    #mutate(Tax = factor(Genus, levels = rev(make.unique(top_taxa)))) %>% 
+    ggplot(aes(x = group, y = Abundance2, fill = Genus2)) +
     geom_bar(stat = "identity", color = 'black') +
-    scale_fill_manual(values = rev(cols)) +
+    scale_fill_manual(values = rev(cols), labels = lev) +
+    guides(fill = guide_legend(title = "Genus", ncol = 1)) +
     labs(y="Composition (%)", x = "", title = "Composition (genus level)") +
     scale_y_continuous(expand = c(0, 0)) +
     theme_composition() +
-    theme(strip.text.x = element_text(size = 16))
+    theme(strip.text.x = element_text(size = 16),
+        legend.text = element_markdown())
 p3
-ggsave("results/composition_genus.pdf", device = "pdf", width = 7, height = 7)
+ggsave("results/211130_composition_genus.pdf", device = "pdf", width = 7, height = 7)
