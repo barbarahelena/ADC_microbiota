@@ -24,7 +24,7 @@ The analysis consisted of several steps:
 - Logistic regression models (`logregression-new.R`; Figure 4). This script runs regression models for the best predicting microbes and either amy or p-tau positive status. The results of these models are plotted in a forest plot.
 
 ## Renv file
-Most analyses (except for the XGBoost models) were performed in RStudio (v.2022.7.2.576) using R (v.4.2.1). We used renv and uploaded a lockfile in this repository to reconstruct the renv.
+Most analyses (except for the XGBoost models) were performed in RStudio using R (v.3.6.2). We used renv and uploaded a lockfile in this repository to reconstruct the renv.
 
 ## Machine learning models
 ### Introduction
