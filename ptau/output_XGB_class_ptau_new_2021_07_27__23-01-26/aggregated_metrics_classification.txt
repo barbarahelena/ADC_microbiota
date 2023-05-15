@@ -1,0 +1,2 @@
+Median AUC	Median F1-score	Median Avg. Precision Score
+0.633	0.75	0.695
