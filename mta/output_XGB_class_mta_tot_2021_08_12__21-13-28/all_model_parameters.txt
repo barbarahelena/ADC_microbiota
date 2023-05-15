@@ -1,0 +1,1 @@
+{'max_depth': [4, 5], 'learning_rate': [0.1, 0.2], 'n_estimators': [100], 'min_child_weight': [1], 'gamma': [0.1, 0.2], 'subsample': [0.8], 'colsample_bytree': [0.5, 0.8, 1], 'random variables added': True, 'early_stopping_rounds': 50, 'N_stab': 200, 'test_size': 0.2, 'CV_fold': 5, 'rand_seed': 512, 'model_type': 'XGB_class', 'name': 'mta_tot_2021_08_12__21-13-28'}
